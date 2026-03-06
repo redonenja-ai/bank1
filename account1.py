@@ -11,16 +11,15 @@ st.set_page_config(page_title="Small Business Accounting", layout="wide")
 if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
 else:
-    df = pd.DataFrame(columns=["Date", "Type", "Category", "Description", "Amount"])
+    df = pd.DataFrame(columns=["Date","Type","Category","Description","Amount"])
 
 # Sidebar
 st.sidebar.title("Navigation")
-page = st.sidebar.radio(
-    "Go to", ["Dashboard", "Add Transaction", "Import CSV", "Transactions"]
-)
+page = st.sidebar.radio("Go to", ["Dashboard","Add Transaction","Transactions"])
 
 # Dashboard
 if page == "Dashboard":
+
     st.title("📊 Small Business Accounting Dashboard")
 
     if df.empty:
@@ -28,11 +27,11 @@ if page == "Dashboard":
     else:
         df["Amount"] = df["Amount"].astype(float)
 
-        income = df[df["Type"] == "Income"]["Amount"].sum()
-        expenses = df[df["Type"] == "Expense"]["Amount"].sum()
+        income = df[df["Type"]=="Income"]["Amount"].sum()
+        expenses = df[df["Type"]=="Expense"]["Amount"].sum()
         profit = income - expenses
 
-        col1, col2, col3 = st.columns(3)
+        col1,col2,col3 = st.columns(3)
 
         col1.metric("Total Income", f"${income:,.2f}")
         col2.metric("Total Expenses", f"${expenses:,.2f}")
@@ -43,7 +42,7 @@ if page == "Dashboard":
 
         # Category summary
         st.subheader("Expenses by Category")
-        exp = df[df["Type"] == "Expense"]
+        exp = df[df["Type"]=="Expense"]
 
         if not exp.empty:
             summary = exp.groupby("Category")["Amount"].sum()
@@ -51,12 +50,14 @@ if page == "Dashboard":
 
 # Add transaction
 elif page == "Add Transaction":
+
     st.title("➕ Add Transaction")
 
     with st.form("transaction_form"):
+
         t_date = st.date_input("Date", date.today())
 
-        t_type = st.selectbox("Type", ["Income", "Expense"])
+        t_type = st.selectbox("Type",["Income","Expense"])
 
         category = st.text_input("Category")
 
@@ -67,12 +68,13 @@ elif page == "Add Transaction":
         submitted = st.form_submit_button("Save")
 
         if submitted:
+
             new_data = {
-                "Date": t_date,
-                "Type": t_type,
-                "Category": category,
-                "Description": description,
-                "Amount": amount,
+                "Date":t_date,
+                "Type":t_type,
+                "Category":category,
+                "Description":description,
+                "Amount":amount
             }
 
             df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
@@ -81,35 +83,9 @@ elif page == "Add Transaction":
 
             st.success("Transaction saved!")
 
-# Import CSV
-elif page == "Import CSV":
-    st.title("📥 Import CSV")
-
-    st.info("Upload a CSV file with columns: Date, Type, Category, Description, Amount")
-
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-
-    if uploaded_file is not None:
-        try:
-            imported_df = pd.read_csv(uploaded_file)
-
-            required_cols = ["Date", "Type", "Category", "Description", "Amount"]
-
-            if all(col in imported_df.columns for col in required_cols):
-                st.write("Preview:")
-                st.dataframe(imported_df.head())
-
-                if st.button("Import Data"):
-                    df = pd.concat([df, imported_df], ignore_index=True)
-                    df.to_csv(DATA_FILE, index=False)
-                    st.success(f"Imported {len(imported_df)} transactions!")
-            else:
-                st.error(f"CSV must have columns: {', '.join(required_cols)}")
-        except Exception as e:
-            st.error(f"Error: {e}")
-
 # Transactions table
 elif page == "Transactions":
+
     st.title("📋 All Transactions")
 
     if df.empty:
@@ -119,4 +95,9 @@ elif page == "Transactions":
 
         csv = df.to_csv(index=False)
 
-        st.download_button("Download CSV", csv, "transactions.csv", "text/csv")
+        st.download_button(
+            "Download CSV",
+            csv,
+            "transactions.csv",
+            "text/csv"
+        )
