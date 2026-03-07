@@ -1,5 +1,5 @@
 import streamlit as st
-import pandas as pda
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, date
@@ -60,6 +60,21 @@ st.markdown(
 # Initialize database
 init_db()
 
+# Safe rerun helper: use experimental_rerun if available, otherwise fall back safely
+def safe_rerun():
+    try:
+        # preferred API
+        st.experimental_rerun()
+        return
+    except Exception:
+        pass
+    try:
+        # older API
+        st.rerun()
+    except Exception:
+        # unable to programmatically rerun; ignore so UI remains usable
+        return
+
 # Sidebar navigation
 st.sidebar.title("📊 Accounting App")
 page = st.sidebar.radio(
@@ -83,6 +98,10 @@ uploaded_file = st.sidebar.file_uploader(
 )
 if uploaded_file is not None:
     try:
+        # ensure pandas is available in this execution scope
+        if "pd" not in globals():
+            import pandas as pd
+
         new_df = pd.read_csv(uploaded_file)
         required_cols = ["Date", "Type", "Category", "Description", "Amount"]
         if all(col in new_df.columns for col in required_cols):
@@ -99,7 +118,7 @@ if uploaded_file is not None:
                 add_transaction(d, ttype, row["Category"], float(row["Amount"]), description)
                 imported += 1
             st.sidebar.success(f"Imported {imported} transactions")
-            st.experimental_rerun()
+            safe_rerun()
         else:
             st.sidebar.error("CSV must contain: Date, Type, Category, Description, Amount")
     except Exception as e:
@@ -248,7 +267,7 @@ elif page == "Income":
                         date_input.isoformat(), "income", category, amount, description
                     )
                     st.success(f"✅ Income of ${amount:,.2f} recorded!")
-                    st.rerun()
+                    safe_rerun()
                 else:
                     st.error("Please enter an amount greater than 0")
 
@@ -325,7 +344,7 @@ elif page == "Expenses":
                         date_input.isoformat(), "expense", category, amount, description
                     )
                     st.success(f"✅ Expense of ${amount:,.2f} recorded!")
-                    st.rerun()
+                    safe_rerun()
                 else:
                     st.error("Please enter an amount greater than 0")
 
@@ -410,7 +429,7 @@ elif page == "Invoices":
                         st.success(
                             f"✅ Invoice {invoice_num} created for ${amount:,.2f}!"
                         )
-                        st.rerun()
+                        safe_rerun()
                     except Exception as e:
                         st.error(f"Error: {e}. Make sure invoice number is unique.")
                 else:
@@ -475,7 +494,7 @@ elif page == "Invoices":
                         st.success(
                             f"Invoice {inv_to_pay.invoice_number} marked as paid!"
                         )
-                        st.rerun()
+                        safe_rerun()
             else:
                 st.info("All invoices are paid! 🎉")
         else:
