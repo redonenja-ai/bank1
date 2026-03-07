@@ -73,6 +73,37 @@ st.sidebar.markdown("### Quick Stats")
 stats = get_dashboard_stats()
 st.sidebar.metric("Monthly Profit", f"${stats['month_profit']:,.2f}")
 st.sidebar.metric("Outstanding", f"${stats['outstanding_invoices']:,.2f}")
+# Sidebar CSV uploader
+st.sidebar.markdown("---")
+st.sidebar.markdown("### Import CSV")
+uploaded_file = st.sidebar.file_uploader(
+    "Upload transactions CSV",
+    type="csv",
+    key="sidebar_upload",
+)
+if uploaded_file is not None:
+    try:
+        new_df = pd.read_csv(uploaded_file)
+        required_cols = ["Date", "Type", "Category", "Description", "Amount"]
+        if all(col in new_df.columns for col in required_cols):
+            new_df["Amount"] = new_df["Amount"].astype(float)
+            imported = 0
+            for _, row in new_df.iterrows():
+                d = pd.to_datetime(row["Date"]).date().isoformat()
+                ttype = str(row["Type"]).strip().lower()
+                if ttype.startswith("inc"):
+                    ttype = "income"
+                elif ttype.startswith("exp"):
+                    ttype = "expense"
+                description = row.get("Description", "") if hasattr(row, "get") else row["Description"]
+                add_transaction(d, ttype, row["Category"], float(row["Amount"]), description)
+                imported += 1
+            st.sidebar.success(f"Imported {imported} transactions")
+            st.experimental_rerun()
+        else:
+            st.sidebar.error("CSV must contain: Date, Type, Category, Description, Amount")
+    except Exception as e:
+        st.sidebar.error(f"Import error: {e}")
 
 # DASHBOARD
 if page == "Dashboard":
