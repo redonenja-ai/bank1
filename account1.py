@@ -83,6 +83,10 @@ uploaded_file = st.sidebar.file_uploader(
 )
 if uploaded_file is not None:
     try:
+        # ensure pandas is available in this execution scope
+        if "pd" not in globals():
+            import pandas as pd
+
         new_df = pd.read_csv(uploaded_file)
         required_cols = ["Date", "Type", "Category", "Description", "Amount"]
         if all(col in new_df.columns for col in required_cols):
